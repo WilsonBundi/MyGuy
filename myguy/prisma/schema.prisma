@@ -1,0 +1,844 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  username     String    @unique
+  phone        String?   @unique
+  password     String
+  isOnline     Boolean   @default(false)
+  lastActiveAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  profile              Profile?
+  pings                Ping[]
+  moments              Moment[]
+  circles              Circle[]              @relation("CircleMembers")
+  adminCircles         Circle[]              @relation("CircleAdmin")
+  circlePosts          CirclePost[]
+  sentMessages         Message[]             @relation("SentMessages")
+  receivedMessages     Message[]             @relation("ReceivedMessages")
+  chatMemberships      ChatMember[]
+  createdCrews         Chat[]                @relation("CrewCreator")
+  crewJoinRequests     CrewJoinRequest[]
+  createdCrewPolls     CrewPoll[]            @relation("CrewPollCreator")
+  crewPollVotes        CrewPollVote[]        @relation("CrewPollVoter")
+  createdCrewEvents    CrewEvent[]           @relation("CrewEventCreator")
+  crewEventAttendances CrewEventAttendance[] @relation("CrewEventAttendee")
+  outgoingCalls        ChatCall[]            @relation("ChatCallCaller")
+  incomingCalls        ChatCall[]            @relation("ChatCallCallee")
+  callSignals          ChatCallSignal[]
+  connections          Connection[]          @relation("UserConnections")
+  connectedTo          Connection[]          @relation("ConnectedToUser")
+  reports              Report[]              @relation("ReportedBy")
+  reportedIn           Report[]              @relation("ReportedUser")
+  blocks               Block[]               @relation("BlockedBy")
+  blockedBy            Block[]               @relation("BlockedUser")
+  comments             Comment[]
+  likes                Like[]
+  shares               Share[]
+  reactions            Reaction[]
+  events               Event[]
+  eventAttendances     EventAttendance[]
+  notifications        Notification[]
+  hostedRooms          Room[]
+  roomParticipations   RoomParticipant[]
+  roomMessages         RoomMessage[]
+  roomGuestRequests    RoomGuestRequest[]
+  roomModerationsCreated RoomModerationAction[] @relation("RoomModerationActor")
+  roomModerationsReceived RoomModerationAction[] @relation("RoomModerationTarget")
+  roomGiftsSent        RoomGift[]
+  giftWallet           GiftWallet?
+  coinLedgerEntries    CoinLedgerEntry[]
+  livePurchases        LiveCoinPurchase[]
+  pollVotes            PollVote[]
+  bookmarks            Bookmark[]
+  collections          Collection[]          @relation("UserCollections")
+  storyReactions       StoryReaction[]
+  storyReplies         StoryReply[]
+}
+
+model Profile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  displayName         String
+  bio                 String?
+  avatar              String?
+  coverImage          String?
+  location            String?
+  country             String?
+  website             String?
+  language            String   @default("en")
+  secondaryLanguages  String[]
+  autoTranslate       Boolean  @default(true)
+  timezone            String?
+  interests           String[]
+  dateOfBirth         String?
+  phone               String?
+  isVerified          Boolean  @default(false)
+  verificationStatus  String? // none, pending, verified
+  creatorCategory     String? // for creator accounts
+  businessCategory    String? // for business accounts
+  businessType        String? // for business accounts
+  onboardingCompleted Boolean  @default(false)
+  followersCount      Int      @default(0)
+  followingCount      Int      @default(0)
+  circlesCount        Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Ping {
+  id          String   @id @default(cuid())
+  content     String
+  mediaUrls   String[] // Array of media URLs for carousel
+  altText     String?
+  location    String? // JSON string with lat, lng, name
+  taggedUsers String[] // Array of user IDs tagged
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  threadId      String?
+  threadRoot    Ping?   @relation("ThreadRoot", fields: [threadId], references: [id], onDelete: SetNull)
+  threadReplies Ping[]  @relation("ThreadRoot")
+
+  scheduledAt   DateTime?
+  isDraft       Boolean   @default(false)
+  isArchived    Boolean   @default(false)
+  hideLikeCount Boolean   @default(false)
+  views         Int       @default(0)
+
+  likes     Like[]
+  comments  Comment[]
+  shares    Share[]
+  reactions Reaction[]
+  poll      Poll?
+  bookmarks Bookmark[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([authorId])
+  @@index([createdAt])
+  @@index([threadId])
+  @@index([scheduledAt])
+  @@index([isDraft])
+  @@index([isArchived])
+}
+
+model Moment {
+  id              String  @id @default(cuid())
+  mediaUrl        String?
+  mediaType       String? // image or video
+  caption         String?
+  location        String? // JSON string with lat, lng, name
+  music           String? // Music track info
+  musicPreviewUrl String? // Music preview URL for playback
+  authorId        String
+  author          User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  expiresAt DateTime
+  views     Int             @default(0)
+  reactions StoryReaction[]
+  replies   StoryReply[]
+
+  createdAt DateTime @default(now())
+
+  @@index([authorId])
+  @@index([expiresAt])
+}
+
+model StoryReaction {
+  id       String @id @default(cuid())
+  momentId String
+  moment   Moment @relation(fields: [momentId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type     String // emoji reaction type
+
+  createdAt DateTime @default(now())
+
+  @@unique([momentId, userId])
+  @@index([momentId])
+  @@index([userId])
+}
+
+model StoryReply {
+  id       String @id @default(cuid())
+  momentId String
+  moment   Moment @relation(fields: [momentId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content  String
+
+  createdAt DateTime @default(now())
+
+  @@index([momentId])
+  @@index([userId])
+}
+
+model Circle {
+  id               String  @id @default(cuid())
+  name             String
+  description      String?
+  imageUrl         String?
+  isPrivate        Boolean @default(false)
+  requiresApproval Boolean @default(false)
+  adminId          String
+  admin            User    @relation("CircleAdmin", fields: [adminId], references: [id], onDelete: Cascade)
+  members          User[]  @relation("CircleMembers")
+
+  posts       CirclePost[]
+  memberCount Int          @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([adminId])
+}
+
+model CirclePost {
+  id       String @id @default(cuid())
+  content  String
+  circleId String
+  circle   Circle @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  likes    Like[]
+  comments Comment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([circleId])
+  @@index([authorId])
+}
+
+model Chat {
+  id               String  @id @default(cuid())
+  isGroup          Boolean @default(false)
+  isBroadcast      Boolean @default(false)
+  groupName        String?
+  groupImage       String?
+  description      String?
+  isPrivate        Boolean @default(false)
+  requiresApproval Boolean @default(false)
+  inviteCode       String? @unique
+  createdById      String?
+  createdBy        User?   @relation("CrewCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  status           String  @default("accepted") // pending, accepted, blocked
+  isArchived       Boolean @default(false)
+  isPinned         Boolean @default(false)
+
+  members      ChatMember[]
+  messages     Message[]
+  joinRequests CrewJoinRequest[]
+  polls        CrewPoll[]
+  events       CrewEvent[]
+  calls        ChatCall[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([isArchived])
+  @@index([isPinned])
+}
+
+model ChatMember {
+  id     String @id @default(cuid())
+  chatId String
+  chat   Chat   @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  joinedAt   DateTime  @default(now())
+  lastReadAt DateTime?
+  muteUntil  DateTime?
+  role       String    @default("member") // owner, admin, member
+
+  @@unique([chatId, userId])
+  @@index([chatId])
+  @@index([userId])
+}
+
+model ChatCall {
+  id               String           @id @default(cuid())
+  chatId           String
+  chat             Chat             @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  callerId         String
+  caller           User             @relation("ChatCallCaller", fields: [callerId], references: [id], onDelete: Cascade)
+  calleeId         String
+  callee           User             @relation("ChatCallCallee", fields: [calleeId], references: [id], onDelete: Cascade)
+  type             String // audio, video
+  status           String           @default("ringing") // ringing, active, declined, ended
+  offer            Json
+  answer           Json?
+  callerLastSeenAt DateTime         @default(now())
+  calleeLastSeenAt DateTime?
+  signals          ChatCallSignal[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([chatId, status, createdAt])
+  @@index([callerId, status])
+  @@index([calleeId, status])
+}
+
+model ChatCallSignal {
+  id        String   @id @default(cuid())
+  callId    String
+  call      ChatCall @relation(fields: [callId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  payload   Json
+  createdAt DateTime @default(now())
+
+  @@index([callId, createdAt])
+}
+
+model CrewJoinRequest {
+  id        String   @id @default(cuid())
+  chatId    String
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    String   @default("pending") // pending, approved, declined
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([chatId, userId])
+  @@index([chatId, status])
+  @@index([userId])
+}
+
+model Message {
+  id             String  @id @default(cuid())
+  content        String
+  messageType    String // text, image, video, audio, file, location
+  mediaUrl       String?
+  attachmentName String?
+  isAnnouncement Boolean @default(false)
+  chatId         String
+  chat           Chat    @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User    @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId     String?
+  receiver       User?   @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  isRead        Boolean   @default(false)
+  readAt        DateTime?
+  isStarred     Boolean   @default(false)
+  viewOnce      Boolean   @default(false)
+  expiresAt     DateTime?
+  deletedAt     DateTime?
+  forwardedFrom String?
+  replyToId     String?
+  replyTo       Message?  @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies       Message[] @relation("MessageReplies")
+  mentions      String[] // Array of user IDs mentioned
+
+  location String? // JSON string with lat, lng
+
+  createdAt DateTime @default(now())
+
+  @@index([chatId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@index([replyToId])
+}
+
+model Like {
+  id           String      @id @default(cuid())
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pingId       String?
+  circlePostId String?
+  ping         Ping?       @relation(fields: [pingId], references: [id], onDelete: Cascade)
+  circlePost   CirclePost? @relation(fields: [circlePostId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, pingId], name: "user_ping_like")
+  @@unique([userId, circlePostId], name: "user_circlePost_like")
+}
+
+model Comment {
+  id              String      @id @default(cuid())
+  content         String
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pingId          String?
+  circlePostId    String?
+  ping            Ping?       @relation(fields: [pingId], references: [id], onDelete: Cascade)
+  circlePost      CirclePost? @relation(fields: [circlePostId], references: [id], onDelete: Cascade)
+  parentCommentId String?
+  parentComment   Comment?    @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies         Comment[]   @relation("CommentReplies")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([pingId])
+  @@index([circlePostId])
+  @@index([userId])
+  @@index([parentCommentId])
+}
+
+model Share {
+  id     String  @id @default(cuid())
+  userId String
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pingId String?
+  ping   Ping?   @relation(fields: [pingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, pingId], name: "user_ping_share")
+  @@index([pingId])
+}
+
+model Reaction {
+  id           String @id @default(cuid())
+  userId       String
+  user         User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pingId       String
+  ping         Ping   @relation(fields: [pingId], references: [id], onDelete: Cascade)
+  reactionType String // love, funny, fire, insight, respect, wow
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, pingId, reactionType])
+  @@index([pingId])
+  @@index([userId])
+}
+
+model Connection {
+  id          String @id @default(cuid())
+  userId      String
+  user        User   @relation("UserConnections", fields: [userId], references: [id], onDelete: Cascade)
+  connectedId String
+  connectedTo User   @relation("ConnectedToUser", fields: [connectedId], references: [id], onDelete: Cascade)
+
+  status    String // pending, accepted, blocked
+  createdAt DateTime @default(now())
+
+  @@unique([userId, connectedId])
+  @@index([userId])
+  @@index([connectedId])
+}
+
+model Report {
+  id           String @id @default(cuid())
+  reporterId   String
+  reporter     User   @relation("ReportedBy", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedId   String
+  reportedUser User   @relation("ReportedUser", fields: [reportedId], references: [id], onDelete: Cascade)
+
+  reason      String
+  description String?
+  status      String  @default("pending") // pending, resolved, dismissed
+
+  createdAt DateTime @default(now())
+
+  @@index([reporterId])
+  @@index([reportedId])
+}
+
+model Block {
+  id          String @id @default(cuid())
+  blockerId   String
+  blocker     User   @relation("BlockedBy", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId   String
+  blockedUser User   @relation("BlockedUser", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId], name: "blockerId_blockedId")
+  @@index([blockerId])
+  @@index([blockedId])
+}
+
+model Event {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  location    String?
+  startTime   DateTime
+  endTime     DateTime?
+  authorId    String
+  author      User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  attendees EventAttendance[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([authorId])
+  @@index([startTime])
+}
+
+model CrewEvent {
+  id          String                @id @default(cuid())
+  chatId      String
+  chat        Chat                  @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  creatorId   String
+  creator     User                  @relation("CrewEventCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  location    String?
+  startTime   DateTime
+  endTime     DateTime?
+  attendees   CrewEventAttendance[]
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+
+  @@index([chatId, startTime])
+  @@index([creatorId])
+}
+
+model CrewEventAttendance {
+  id        String    @id @default(cuid())
+  eventId   String
+  event     CrewEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User      @relation("CrewEventAttendee", fields: [userId], references: [id], onDelete: Cascade)
+  status    String    @default("going") // going, interested, not_going
+  createdAt DateTime  @default(now())
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+}
+
+model CrewPoll {
+  id             String           @id @default(cuid())
+  chatId         String
+  chat           Chat             @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  creatorId      String
+  creator        User             @relation("CrewPollCreator", fields: [creatorId], references: [id], onDelete: Cascade)
+  question       String
+  allowsMultiple Boolean          @default(false)
+  endsAt         DateTime?
+  options        CrewPollOption[]
+  createdAt      DateTime         @default(now())
+
+  @@index([chatId, createdAt])
+  @@index([creatorId])
+}
+
+model CrewPollOption {
+  id     String         @id @default(cuid())
+  pollId String
+  poll   CrewPoll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  text   String
+  votes  CrewPollVote[]
+
+  @@index([pollId])
+}
+
+model CrewPollVote {
+  id        String         @id @default(cuid())
+  optionId  String
+  option    CrewPollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User           @relation("CrewPollVoter", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+
+  @@unique([optionId, userId])
+  @@index([optionId])
+  @@index([userId])
+}
+
+model EventAttendance {
+  id      String @id @default(cuid())
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  status String @default("going") // going, interested, not_going
+
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
+}
+
+model Notification {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type  String // connection, comment, reaction, share, message, event, moment
+  title String
+  body  String?
+  link  String?
+
+  read Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+}
+
+model Room {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  category    String?
+  type        String  @default("video") // audio, video
+  isLive      Boolean @default(false)
+  roomName    String? @unique
+  hostId      String
+  host        User    @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  endedAt     DateTime?
+  chatEnabled Boolean @default(true)
+
+  participants RoomParticipant[]
+  messages     RoomMessage[]
+  guestRequests RoomGuestRequest[]
+  moderationActions RoomModerationAction[]
+  gifts RoomGift[]
+  replay LiveReplay?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([hostId])
+  @@index([isLive])
+}
+
+model Poll {
+  id       String @id @default(cuid())
+  question String
+  pingId   String @unique
+  ping     Ping   @relation(fields: [pingId], references: [id], onDelete: Cascade)
+
+  expiresAt  DateTime?
+  isMultiple Boolean   @default(false)
+
+  options PollOption[]
+
+  createdAt DateTime @default(now())
+
+  @@index([pingId])
+  @@index([expiresAt])
+}
+
+model PollOption {
+  id     String @id @default(cuid())
+  text   String
+  pollId String
+  poll   Poll   @relation(fields: [pollId], references: [id], onDelete: Cascade)
+
+  votes  Int        @default(0)
+  voters PollVote[]
+
+  @@index([pollId])
+}
+
+model PollVote {
+  id       String     @id @default(cuid())
+  optionId String
+  option   PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([optionId, userId])
+  @@index([optionId])
+  @@index([userId])
+}
+
+model Bookmark {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pingId String
+  ping   Ping   @relation(fields: [pingId], references: [id], onDelete: Cascade)
+
+  folder String? // Bookmark folder name
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, pingId])
+  @@index([userId])
+  @@index([pingId])
+}
+
+model Collection {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  userId      String
+  user        User    @relation("UserCollections", fields: [userId], references: [id], onDelete: Cascade)
+
+  members CollectionMember[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model CollectionMember {
+  id           String     @id @default(cuid())
+  collectionId String
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  pingId       String
+  addedAt      DateTime   @default(now())
+
+  @@unique([collectionId, pingId])
+  @@index([collectionId])
+  @@index([pingId])
+}
+
+model RoomParticipant {
+  id     String @id @default(cuid())
+  roomId String
+  room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  role     String   @default("listener") // host, speaker, listener
+  joinedAt DateTime @default(now())
+  publishingMuted Boolean @default(false)
+  chatMutedUntil DateTime?
+  bannedAt DateTime?
+  kickedUntil DateTime?
+
+  @@unique([roomId, userId])
+  @@index([roomId])
+  @@index([userId])
+  @@index([roomId, role])
+  @@index([roomId, bannedAt])
+}
+
+model RoomMessage {
+  id        String   @id @default(cuid())
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([roomId, createdAt])
+  @@index([userId])
+}
+
+model RoomGuestRequest {
+  id        String   @id @default(cuid())
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    String   @default("pending") // pending, invited, accepted, declined
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([roomId, userId])
+  @@index([roomId, status])
+}
+
+model RoomModerationAction {
+  id        String   @id @default(cuid())
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  actorId   String
+  actor     User     @relation("RoomModerationActor", fields: [actorId], references: [id], onDelete: Cascade)
+  targetId  String?
+  target    User?    @relation("RoomModerationTarget", fields: [targetId], references: [id], onDelete: SetNull)
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+
+  @@index([roomId, createdAt])
+  @@index([targetId, createdAt])
+}
+
+model GiftWallet {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balance   Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+model CoinLedgerEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount    Int
+  reason    String
+  reference String?
+  createdAt DateTime @default(now())
+
+  @@unique([userId, reference])
+  @@index([userId, createdAt])
+}
+
+model LiveCoinPurchase {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactionId String   @unique
+  productId     String
+  store         String?
+  coins         Int
+  createdAt     DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model RoomGift {
+  id        String   @id @default(cuid())
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  giftType  String
+  coins     Int
+  createdAt DateTime @default(now())
+
+  @@index([roomId, createdAt])
+  @@index([senderId, createdAt])
+}
+
+model LiveReplay {
+  id             String    @id @default(cuid())
+  roomId         String    @unique
+  room           Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  egressId       String?   @unique
+  storageKey     String    @unique
+  status         String    @default("starting") // starting, recording, ready, failed, deleted
+  durationSeconds Int?
+  error          String?
+  consentedAt    DateTime
+  expiresAt      DateTime
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([status, expiresAt])
+}

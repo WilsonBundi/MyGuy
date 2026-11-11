@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-primary: #ea580c;
+  --brand-primary-dark: #7c2d12;
+  --brand-accent: #ef4444;
+}
+
+body {
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 50%, #fed7aa 100%);
+  transition: background 0.3s ease;
+}
+
+.dark body {
+  background: linear-gradient(135deg, #1c1917 0%, #292524 50%, #44403c 100%);
+}

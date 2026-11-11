@@ -1,0 +1,44 @@
+{
+  "name": "myguy-mobile",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start --dev-client",
+    "android": "expo start --dev-client --android",
+    "ios": "expo start --dev-client --ios",
+    "web": "expo start --web",
+    "postinstall": "node scripts/apply-live-filter-patch.js"
+  },
+  "dependencies": {
+    "@config-plugins/react-native-webrtc": "^9.0.0",
+    "@expo/vector-icons": "^14.0.4",
+    "@livekit/react-native": "^2.1.0",
+    "@livekit/react-native-expo-plugin": "^1.1.0",
+    "@livekit/react-native-webrtc": "^114.1.0",
+    "@react-native-async-storage/async-storage": "^1.23.1",
+    "axios": "^1.7.9",
+    "expo": "~51.0.0",
+    "expo-av": "~14.0.7",
+    "expo-dev-client": "~4.0.29",
+    "expo-document-picker": "~12.0.2",
+    "expo-image-picker": "~15.1.0",
+    "expo-linking": "~6.3.0",
+    "expo-router": "~3.5.0",
+    "expo-status-bar": "~1.12.0",
+    "livekit-client": "^2.23.0",
+    "query-string": "^9.1.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-native": "0.74.5",
+    "react-native-purchases": "^8.12.0",
+    "react-native-safe-area-context": "4.10.5",
+    "react-native-screens": "~3.31.0",
+    "react-native-web": "~0.19.6"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.0",
+    "@types/react": "~18.3.12",
+    "typescript": "^5.3.3"
+  },
+  "private": true
+}

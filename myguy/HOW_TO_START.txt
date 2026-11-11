@@ -1,0 +1,39 @@
+MYGUY - HOW TO START THE SERVER
+================================
+
+Option 1: Using Command Prompt
+------------------------------
+1. Open Command Prompt (cmd)
+2. Type: cd C:\Projects\MyGuy\myguy
+3. Type: npm run dev
+4. Wait for: "ready - started server on 0.0.0.0:3000"
+5. Open browser: http://localhost:3000
+
+Option 2: Using PowerShell
+---------------------------
+1. Open PowerShell
+2. Type: cd C:\Projects\MyGuy\myguy
+3. Type: npm run dev
+4. Wait for: "ready - started server on 0.0.0.0:3000"
+5. Open browser: http://localhost:3000
+
+Option 3: Using Terminal (VS Code)
+----------------------------------
+1. Open VS Code
+2. Press Ctrl+` to open terminal
+3. Type: npm run dev
+4. Wait for: "ready - started server on 0.0.0.0:3000"
+5. Open browser: http://localhost:3000
+
+Troubleshooting
+---------------
+If you get "command not found":
+- Install Node.js from https://nodejs.org/
+
+If port 3000 is already in use:
+- Close other Node.js processes
+- Or use: npx next dev -p 3001
+- Then visit: http://localhost:3001
+
+To stop the server:
+- Press Ctrl+C in the terminal

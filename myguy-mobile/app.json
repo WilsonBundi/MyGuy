@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "myguy-mobile",
+    "slug": "myguy-mobile",
+    "version": "1.0.0",
+    "sdkVersion": "51.0.0",
+    "scheme": "myguy",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.myguy.mobile",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true
+        }
+      }
+    },
+    "android": {
+      "package": "com.myguy.mobile",
+      "usesCleartextTraffic": true
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "MyGuy uses your photo library so you can add pictures and clips to your moments and profile.",
+          "cameraPermission": "MyGuy uses your camera when you choose to take a picture or record a clip.",
+          "microphonePermission": "MyGuy uses your microphone when you choose to record a video, make a call, or start a live stream."
+        }
+      ],
+      "@livekit/react-native-expo-plugin",
+      "@config-plugins/react-native-webrtc",
+      "./plugins/withWebRTC"
+    ]
+  }
+}
